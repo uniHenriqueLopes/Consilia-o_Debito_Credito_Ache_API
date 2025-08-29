@@ -13,19 +13,21 @@ PedidoEletronico.Cod_PedCli AS [Pedido_OL],
 PedidoVendas.Numero AS [Pedido_Venda],
 PedidoVendas.Cod_NumNfsIni as [Numero_nota],
 NotaSaida.Status as [Status_NF],
-NotaSaida.Dat_Emissao as [emissão_NF],
+CONVERT(DATE, NotaSaida.Dat_Emissao) as [emissão_NF],
 PedidoVendasItens.Cod_Produto as [Codigo_Produto],
 Produto.Descricao as  [Produto_descricao],
---PedidoEletronicoItens.Qtd_Pedido as [quantidade_OL],
---PedidoEletronicoItens.Qtd_Atendi as [Qtd_Atendida_OL],
---NotaSaidaItens.Qtd_Produto as [Qtd_Pedido_Venda], --TENTAR PUXAR DADOS DA NFSIT
 ISNULL(DebitosAche.Qtde_Faturamento, 0) as [Qtd_Faturada],
 'nome do Arquivo' as [Qtd_Ache],
 PedidoVendasItens.Prc_Unitario as [Valor_Unitario_Venda],
+ISNULL(DebitosAche.Valor_Bruto, 0) AS [Valor_Bruto],
 ISNULL(DebitosAche.RF_Valor_Debito, 0) AS [RFValorDebito],
 ISNULL(DebitosAche.RF_Ajuste_Tributario, 0) AS [RFAjusteTributario],
 ISNULL(DebitosAche.prct_Desconto, 0) AS [Desconto],
 ISNULL(DebitosAche.prct_Desconto_Padrao, 0) AS [Desconto_padrao],
+ISNULL(DebitosAche.prct_Custo_Margem , 0) AS [Margem/Spred], 
+ISNULL(DebitosAche.RF_PISCofins , 0) AS [Pis_Cofins],
+ISNULL(DebitosAche.prct_Repasse_ICMS, 0) AS [Percentual_Repasse],
+ISNULL(DebitosAche.Valor_Repasse_ICMS, 0) AS [Valor_Repasse],
 PedidoEletronico.Dat_LeiPed AS [DataEntradaArquivo],
 'Empresa' AS [Empresa]
 
@@ -57,9 +59,6 @@ const groupByFields = `
 	NotaSaida.Status,
 	NotaSaida.Dat_Emissao,
 	Produto.Descricao,
-	--PedidoEletronicoItens.Qtd_Pedido,
-	--PedidoEletronicoItens.Qtd_Atendi,
-	--NotaSaidaItens.Qtd_Produto,
 	PedidoVendasItens.Qtd_Pedido,
 	PedidoVendasItens.Prc_Unitario,
 	PedidoEletronico.Dat_LeiPed,
@@ -69,14 +68,19 @@ const groupByFields = `
 	DebitosAche.RF_Ajuste_Tributario,
 	DebitosAche.prct_Desconto,
 	DebitosAche.prct_Desconto_Padrao,
-	NotaSaida.Num_Nota
+	NotaSaida.Num_Nota,
+	DebitosAche.Valor_Bruto,
+	DebitosAche.prct_Custo_Margem,
+	DebitosAche.RF_PISCofins,
+	DebitosAche.prct_Repasse_ICMS,
+	DebitosAche.Valor_Repasse_ICMS
 `;
 
 
 
 
 function buildQuery(whereClause) {
-  return `
+	return `
     SELECT ${selectColumns}
     FROM ${joinTables}
     WHERE ${whereClause}
@@ -85,52 +89,52 @@ function buildQuery(whereClause) {
 }
 
 const queries = {
-  getAll: buildQuery(`PedidoVendas.Dat_Pedido > '2025-04-01'`),
+	getAll: buildQuery(`PedidoVendas.Dat_Pedido > '2025-04-01'`),
 
-  getData: buildQuery(`PedidoVendas.Dat_Pedido BETWEEN @dataInicio AND @dataFim`),
+	getData: buildQuery(`PedidoVendas.Dat_Pedido BETWEEN @dataInicio AND @dataFim`),
 
-  getDatePedidoOl: buildQuery(`
+	getDatePedidoOl: buildQuery(`
     PedidoVendas.Dat_Pedido BETWEEN @dataInicio AND @dataFim
     AND PedidoEletronico.Cod_PedCli LIKE @pedidoOl
   `),
 
-  getDateNF: buildQuery(`
+	getDateNF: buildQuery(`
     PedidoVendas.Dat_Pedido BETWEEN @dataInicio AND @dataFim
     AND NotaSaida.Num_Nota LIKE @numeroNota
   `),
 
-  getDatePedidoVenda: buildQuery(`
+	getDatePedidoVenda: buildQuery(`
     PedidoVendas.Dat_Pedido BETWEEN @dataInicio AND @dataFim
     AND PedidoVendas.Numero LIKE @pedidoVenda
   `),
 
-  getDateProduto: buildQuery(`
+	getDateProduto: buildQuery(`
     PedidoVendas.Dat_Pedido BETWEEN @dataInicio AND @dataFim
     AND Produto.Descricao LIKE @produto
   `),
 
-  getDatePedidoOlPedidoVenda: buildQuery(whereClauses.data_pedidoOl_pedidoVenda),
+	getDatePedidoOlPedidoVenda: buildQuery(whereClauses.data_pedidoOl_pedidoVenda),
 
-  getDatePedidoOlNf: buildQuery(whereClauses.data_pedidoOl_nota),
+	getDatePedidoOlNf: buildQuery(whereClauses.data_pedidoOl_nota),
 
-  getDatePedidoOlProduto: buildQuery(whereClauses.data_pedidoOl_produto),
-
-
-  getDatePedidoVendaNf: buildQuery(whereClauses.data_pedidoVenda_nota),
-
-  getDatePedidoVendaProduto: buildQuery(whereClauses.data_pedidoVenda_produto),
-
-  getDateNfProduto: buildQuery(whereClauses.pedidoOl_produto_nota),
+	getDatePedidoOlProduto: buildQuery(whereClauses.data_pedidoOl_produto),
 
 
-  getDatePedidoOlPedidoVendaNf: buildQuery(whereClauses.data_pedidoOl_pedidoVenda_nota),
+	getDatePedidoVendaNf: buildQuery(whereClauses.data_pedidoVenda_nota),
 
-  getDatePedidoOlPedidoVendaProduto: buildQuery(whereClauses.data_pedidoOl_pedidoVenda_produto),
+	getDatePedidoVendaProduto: buildQuery(whereClauses.data_pedidoVenda_produto),
 
-  getDatePedidoVendaProdutoNf: buildQuery(whereClauses.data_pedidoVenda_produto_nota),
+	getDateNfProduto: buildQuery(whereClauses.pedidoOl_produto_nota),
 
 
-  getDatePedidoOlPedidoVendaNfProduto: buildQuery(whereClauses.data_pedidoOl_pedidoVenda_produto_nota)
+	getDatePedidoOlPedidoVendaNf: buildQuery(whereClauses.data_pedidoOl_pedidoVenda_nota),
+
+	getDatePedidoOlPedidoVendaProduto: buildQuery(whereClauses.data_pedidoOl_pedidoVenda_produto),
+
+	getDatePedidoVendaProdutoNf: buildQuery(whereClauses.data_pedidoVenda_produto_nota),
+
+
+	getDatePedidoOlPedidoVendaNfProduto: buildQuery(whereClauses.data_pedidoOl_pedidoVenda_produto_nota)
 
 
 };

@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const conciliacaoRoutes = require('./src/routes/conciliacaoRoutes');
+const uploadRoutes = require('./src/routes/fileUploadRoutes');
 
 const app = express();
 const port = process.env.PORT || 3005;
@@ -13,6 +14,7 @@ app.use(express.json()); // Habilita o parsing de JSON no corpo das requisiçõe
 
 // Rota principal da API
 app.use('/api/conciliacoes', conciliacaoRoutes);
+app.use('/api', uploadRoutes);
 
 // Rota de teste
 app.get('/', (req, res) => {
