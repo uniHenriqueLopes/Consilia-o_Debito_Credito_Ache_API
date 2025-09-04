@@ -1,18 +1,17 @@
-// arquivo: /routes/conciliacaoRoutes.js
 const express = require('express');
 const router = express.Router();
 const controller = require('../controllers/conciliacaoController');
 
-// (Placeholder para o middleware de upload, caso implemente a importação)
-// const multer = require('multer');
-// const upload = multer({ dest: 'uploads/' });
-
-
 // ==========================================================
 // ROTA DE FILTRO AVANÇADO
 // ==========================================================
-// Um único endpoint POST para lidar com TODAS as combinações de filtros.
-// O front-end envia um JSON com os filtros desejados no corpo da requisição.
+// POST /filtrar
+// Esta rota aceita um JSON no corpo com os seguintes campos:
+// - dataInicio: string (obrigatório)
+// - dataFim: string (obrigatório)
+// - pedidoOl: string (opcional)
+// - numeroNota: string (opcional)
+// - produto: string (opcional)
 router.post('/filtrar', controller.findByFilters);
 
 
@@ -26,14 +25,14 @@ router.get('/', controller.getAll);
 // Buscar um registro específico pelo ID
 router.get('/:id', controller.getById);
 
-// Criar um novo registro (se necessário, geralmente a criação virá da importação)
-// router.post('/', controller.create); // Descomente se precisar de uma rota para criação manual
+// Criar um novo registro (caso necessário)
+// router.post('/', controller.create);
 
 // Atualizar um registro existente
-// router.put('/:id', controller.update); // Descomente se a edição for permitida
+// router.put('/:id', controller.update);
 
 // Excluir um registro
-// router.delete('/:id', controller.delete); // Descomente se a exclusão for permitida
+// router.delete('/:id', controller.delete);
 
 
 // ==========================================================

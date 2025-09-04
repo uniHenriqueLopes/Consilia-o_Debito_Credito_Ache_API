@@ -20,13 +20,13 @@ class ConciliacaoRepository {
         return result.recordset[0];
     }
 
-    async getDate(dataInicio, dataFim) {
+    async getByDateRange(dataInicio, dataFim) {
         const pool = await poolPromise;
         const result = await pool.request()
             .input('dataInicio', sql.Date, dataInicio)
             .input('dataFim', sql.Date, dataFim)
-            .query(queries.getData);
-        return result.recordset;
+            .query(queries.getByDateRange);
+        return  result.recordset;
     }
 
     // Repositorio do filtro do Pedido OL

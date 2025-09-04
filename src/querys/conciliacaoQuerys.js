@@ -1,142 +1,146 @@
-const whereClauses = require('./conciliacaoWhereClauses');
-
 // arquivo: /querys/conciliacaoQuerys.js
-const selectColumns = `
-CASE 
-	WHEN DebitosAche.Numero_NF IS NULL THEN 'NÃO CONCILIADO'
-	WHEN NotaSaida.Num_Nota IS NULL THEN 'NÃO FATURADA'
-	WHEN NotaSaida.Status = 'C' THEN 'NF CANCELADA'
-	ELSE 'CONCILIADO'
-END AS [Status],
-
-PedidoEletronico.Cod_PedCli AS [Pedido_OL],
-PedidoVendas.Numero AS [Pedido_Venda],
-PedidoVendas.Cod_NumNfsIni as [Numero_nota],
-NotaSaida.Status as [Status_NF],
-CONVERT(DATE, NotaSaida.Dat_Emissao) as [emissão_NF],
-PedidoVendasItens.Cod_Produto as [Codigo_Produto],
-Produto.Descricao as  [Produto_descricao],
-ISNULL(DebitosAche.Qtde_Faturamento, 0) as [Qtd_Faturada],
-'nome do Arquivo' as [Qtd_Ache],
-PedidoVendasItens.Prc_Unitario as [Valor_Unitario_Venda],
-ISNULL(DebitosAche.Valor_Bruto, 0) AS [Valor_Bruto],
-ISNULL(DebitosAche.RF_Valor_Debito, 0) AS [RFValorDebito],
-ISNULL(DebitosAche.RF_Ajuste_Tributario, 0) AS [RFAjusteTributario],
-ISNULL(DebitosAche.prct_Desconto, 0) AS [Desconto],
-ISNULL(DebitosAche.prct_Desconto_Padrao, 0) AS [Desconto_padrao],
-ISNULL(DebitosAche.prct_Custo_Margem , 0) AS [Margem/Spred], 
-ISNULL(DebitosAche.RF_PISCofins , 0) AS [Pis_Cofins],
-ISNULL(DebitosAche.prct_Repasse_ICMS, 0) AS [Percentual_Repasse],
-ISNULL(DebitosAche.Valor_Repasse_ICMS, 0) AS [Valor_Repasse],
-PedidoEletronico.Dat_LeiPed AS [DataEntradaArquivo],
-'Empresa' AS [Empresa]
-
-`;
-
-const joinTables = `
-	DMD.dbo.PDECB PedidoEletronico
-	INNER JOIN DMD.dbo.PDEIT PedidoEletronicoItens 
-		ON PedidoEletronicoItens.Cod_PedCli = PedidoEletronico.Cod_PedCli
-	INNER JOIN DMD.dbo.PDVCB PedidoVendas 
-		ON PedidoVendas.Numero = PedidoEletronico.Num_PedVen
-	INNER JOIN DMD.dbo.PDVIT PedidoVendasItens 
-		ON PedidoVendasItens.Cod_Pedido = PedidoVendas.Numero
-	INNER JOIN DMD.dbo.NFSCB NotaSaida 
-		ON NotaSaida.Num_Nota = PedidoVendas.Cod_NumNfsIni
-	INNER JOIN DMD.dbo.NFSIT NotaSaidaItens 
-		ON NotaSaidaItens.Num_Nota = NotaSaida.Num_Nota
-	INNER JOIN DMD.dbo.PRODU Produto 
-		ON Produto.Codigo = PedidoVendasItens.Cod_Produto
-	LEFT JOIN [UHCDB].[dbo].[DebitosAche] 
-		ON DebitosAche.Numero_NF = NotaSaida.Num_Nota
-`;
-
-const groupByFields = `
-	PedidoEletronico.Cod_PedCli,
-	PedidoVendas.Numero,
-	PedidoVendas.Cod_NumNfsIni,
-	PedidoVendasItens.Cod_Produto,
-	NotaSaida.Status,
-	NotaSaida.Dat_Emissao,
-	Produto.Descricao,
-	PedidoVendasItens.Qtd_Pedido,
-	PedidoVendasItens.Prc_Unitario,
-	PedidoEletronico.Dat_LeiPed,
-	DebitosAche.Numero_NF,
-	DebitosAche.Qtde_Faturamento,
-	DebitosAche.RF_Valor_Debito,
-	DebitosAche.RF_Ajuste_Tributario,
-	DebitosAche.prct_Desconto,
-	DebitosAche.prct_Desconto_Padrao,
-	NotaSaida.Num_Nota,
-	DebitosAche.Valor_Bruto,
-	DebitosAche.prct_Custo_Margem,
-	DebitosAche.RF_PISCofins,
-	DebitosAche.prct_Repasse_ICMS,
-	DebitosAche.Valor_Repasse_ICMS
-`;
-
-
-
 
 function buildQuery(whereClause) {
-	return `
-    SELECT ${selectColumns}
-    FROM ${joinTables}
-    WHERE ${whereClause}
-    GROUP BY ${groupByFields}
+  return `
+    WITH VendasUni AS (
+      SELECT 
+        NotaSaida.Status AS [Status],
+        NotaSaida.Cod_PedCliPde AS [Pedido_OL],
+        NotaSaida.Cod_Pedido AS [Pedido_Venda],
+        NotaSaida.Num_Nota,
+        CASE 
+          WHEN NotaSaida.Status = 'F' THEN 'FECHADA'
+          WHEN NotaSaida.Status = 'C' THEN 'CANCELADA'
+          WHEN NotaSaida.Status = 'A' THEN 'ABERTA'
+        END AS [Status_NF],
+        CONVERT(DATE, NotaSaida.Dat_Emissao) AS [Dat_Emissao],
+        Produto.Codigo AS [codigo_Produto],
+        Produto.Descricao AS [Nome_Produto],
+        Produto.Cod_EAN,
+        Fabricante.Fantasia AS [Fabricante],
+        NotaSaidaItens.Qtd_Produto,
+        NotaSaidaItens.Prc_Unitario,
+        NotaSaidaItens.Vlr_BruItem,
+        'Uni Hospitalar' AS [Empresa]
+      FROM 
+        DMD.dbo.NFSCB NotaSaida
+        INNER JOIN DMD.dbo.PDECB PedidoEletronico 
+          ON PedidoEletronico.Cod_PedCli = NotaSaida.Cod_PedCliPde
+        INNER JOIN DMD.dbo.NFSIT NotaSaidaItens 
+          ON NotaSaidaItens.Num_Nota = NotaSaida.Num_Nota
+        LEFT JOIN DMD.dbo.PRODU Produto 
+          ON Produto.Codigo = NotaSaidaItens.Cod_Produto
+        INNER JOIN DMD.dbo.FABRI Fabricante
+          ON Fabricante.Codigo = Produto.Cod_Fabricante
+      WHERE 
+        Fabricante.Fantasia LIKE '%ach%' 
+        AND ${whereClause}
+      GROUP BY 
+        NotaSaida.Num_Nota,
+        NotaSaida.Status,
+        NotaSaida.Cod_PedCliPde,
+        NotaSaida.Cod_Pedido,
+        NotaSaida.Dat_Emissao,
+        Produto.Codigo,
+        Produto.Descricao,
+        Produto.Cod_EAN,
+        Fabricante.Fantasia,
+        NotaSaidaItens.Qtd_Produto,
+        NotaSaidaItens.Prc_Unitario,
+        NotaSaidaItens.Vlr_BruItem
+    )
+
+    SELECT 
+      CASE 
+        WHEN VendasUni.Status = 'C' AND DebitosAche.Qtde_Faturamento IS NULL THEN 'NÃO CONCILIADO'
+        WHEN VendasUni.Status = 'C' THEN 'CONCILIADO'
+        WHEN DebitosAche.Numero_NF IS NOT NULL AND VendasUni.Num_Nota IS NULL THEN 'NÃO FATURADA'
+        WHEN DebitosAche.Numero_NF IS NULL  THEN 'NÃO CONCILIADO' -- Caso a nota não exista
+        ELSE 'CONCILIADO'
+      END AS [Status],
+      DebitosAche.Numero_NF AS [Nota_Ache],
+      VendasUni.Num_Nota,
+      CASE 
+        WHEN VendasUni.Status = 'F' THEN 'FECHADA'
+        WHEN VendasUni.Status = 'C' THEN 'CANCELADA'
+        WHEN VendasUni.Status = 'A' THEN 'ABERTA'
+      END AS [Status_NF],
+      VendasUni.Pedido_OL,
+      VendasUni.Pedido_Venda,
+      VendasUni.Dat_Emissao,
+      VendasUni.codigo_Produto,
+      VendasUni.Nome_Produto,
+      VendasUni.Cod_EAN,
+      VendasUni.Fabricante,
+      DebitosAche.Qtde_Faturamento AS [Qtd_Faturada_Ache],
+      VendasUni.Qtd_Produto AS [Quantidade_Produto_Uni],
+      VendasUni.Prc_Unitario AS [Preço_Unitario_UNI],
+      VendasUni.Vlr_BruItem AS [Valor_Total_UNI],
+      DebitosAche.Valor_Debito_Final,
+      DebitosAche.Valor_Bruto,
+      DebitosAche.Valor_Debito_Bruto,
+      DebitosAche.RF_Ajuste_Tributario,
+      DebitosAche.prct_Desconto,
+      DebitosAche.prct_Desconto_Padrao,
+      DebitosAche.prct_Custo_Margem,
+      DebitosAche.prct_Debito,
+      DebitosAche.RF_Aliquota_Interestadual,
+      DebitosAche.RF_PISCofins,
+      DebitosAche.RF_RedutorICMS
+    FROM 
+      UHCDB.DBO.DebitosAche 
+      RIGHT JOIN VendasUni 
+        ON VendasUni.Num_Nota = DebitosAche.Numero_NF  
+        AND VendasUni.Cod_EAN COLLATE Latin1_General_CI_AS = DebitosAche.Cod_EAN COLLATE Latin1_General_CI_AS
+    GROUP BY
+      VendasUni.Num_Nota,
+      VendasUni.Status,
+      VendasUni.Pedido_OL,
+      VendasUni.Pedido_Venda,
+      VendasUni.Dat_Emissao,
+      VendasUni.codigo_Produto,
+      VendasUni.Nome_Produto,
+      VendasUni.Cod_EAN,
+      VendasUni.Fabricante,
+      VendasUni.Qtd_Produto,
+      DebitosAche.Qtde_Faturamento,
+      VendasUni.Prc_Unitario,
+      VendasUni.Vlr_BruItem,
+      DebitosAche.RF_Ajuste_Tributario,
+      DebitosAche.Valor_Bruto,
+      DebitosAche.Valor_Debito_Bruto,
+      DebitosAche.prct_Desconto,
+      DebitosAche.prct_Desconto_Padrao,
+      DebitosAche.Valor_Debito_Final,
+      DebitosAche.prct_Custo_Margem,
+      DebitosAche.prct_Debito,
+      DebitosAche.RF_Aliquota_Interestadual,
+      DebitosAche.RF_PISCofins,
+      DebitosAche.RF_RedutorICMS,
+      DebitosAche.Numero_NF
   `;
 }
 
+// Exportando diferentes variações da consulta
 const queries = {
-	getAll: buildQuery(`PedidoVendas.Dat_Pedido > '2025-04-01'`),
+  getAll: buildQuery(`NotaSaida.Dat_Emissao > '2025-04-01'`),
 
-	getData: buildQuery(`PedidoVendas.Dat_Pedido BETWEEN @dataInicio AND @dataFim`),
+  getByDateRange: buildQuery(`NotaSaida.Dat_Emissao BETWEEN @dataInicio AND @dataFim`),
 
-	getDatePedidoOl: buildQuery(`
-    PedidoVendas.Dat_Pedido BETWEEN @dataInicio AND @dataFim
-    AND PedidoEletronico.Cod_PedCli LIKE @pedidoOl
-  `),
-
-	getDateNF: buildQuery(`
-    PedidoVendas.Dat_Pedido BETWEEN @dataInicio AND @dataFim
+  getByDateAndNota: buildQuery(`
+    NotaSaida.Dat_Emissao BETWEEN @dataInicio AND @dataFim
     AND NotaSaida.Num_Nota LIKE @numeroNota
   `),
 
-	getDatePedidoVenda: buildQuery(`
-    PedidoVendas.Dat_Pedido BETWEEN @dataInicio AND @dataFim
-    AND PedidoVendas.Numero LIKE @pedidoVenda
+  getByDateAndPedidoOl: buildQuery(`
+    NotaSaida.Dat_Emissao BETWEEN @dataInicio AND @dataFim
+    AND NotaSaida.Cod_PedCliPde LIKE @pedidoOl
   `),
 
-	getDateProduto: buildQuery(`
-    PedidoVendas.Dat_Pedido BETWEEN @dataInicio AND @dataFim
+  getByDateAndProduto: buildQuery(`
+    NotaSaida.Dat_Emissao BETWEEN @dataInicio AND @dataFim
     AND Produto.Descricao LIKE @produto
-  `),
-
-	getDatePedidoOlPedidoVenda: buildQuery(whereClauses.data_pedidoOl_pedidoVenda),
-
-	getDatePedidoOlNf: buildQuery(whereClauses.data_pedidoOl_nota),
-
-	getDatePedidoOlProduto: buildQuery(whereClauses.data_pedidoOl_produto),
-
-
-	getDatePedidoVendaNf: buildQuery(whereClauses.data_pedidoVenda_nota),
-
-	getDatePedidoVendaProduto: buildQuery(whereClauses.data_pedidoVenda_produto),
-
-	getDateNfProduto: buildQuery(whereClauses.pedidoOl_produto_nota),
-
-
-	getDatePedidoOlPedidoVendaNf: buildQuery(whereClauses.data_pedidoOl_pedidoVenda_nota),
-
-	getDatePedidoOlPedidoVendaProduto: buildQuery(whereClauses.data_pedidoOl_pedidoVenda_produto),
-
-	getDatePedidoVendaProdutoNf: buildQuery(whereClauses.data_pedidoVenda_produto_nota),
-
-
-	getDatePedidoOlPedidoVendaNfProduto: buildQuery(whereClauses.data_pedidoOl_pedidoVenda_produto_nota)
-
-
+  `)
 };
 
 module.exports = queries;
