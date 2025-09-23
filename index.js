@@ -10,7 +10,9 @@ const port = process.env.PORT || 3005;
 
 // Middlewares
 app.use(cors()); // Permite requisições de outras origens (seu front-end)
-app.use(express.json()); // Habilita o parsing de JSON no corpo das requisições
+// Aumentar o limite de payload do JSON
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Rota principal da API
 app.use('/api/conciliacoes', conciliacaoRoutes);

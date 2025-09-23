@@ -2,6 +2,16 @@ const express = require('express');
 const router = express.Router();
 const controller = require('../controllers/conciliacaoController');
 
+
+
+
+
+// Novo endpoint para importar CSV como array de objetos
+router.post('/importar', controller.importarLote);
+
+
+
+
 // ==========================================================
 // ROTA DE FILTRO AVANÇADO
 // ==========================================================
@@ -26,7 +36,12 @@ router.get('/', controller.getAll);
 router.get('/:id', controller.getById);
 
 // Criar um novo registro (caso necessário)
-// router.post('/', controller.create);
+router.post('/', controller.create);
+
+
+
+
+
 
 // Atualizar um registro existente
 // router.put('/:id', controller.update);
