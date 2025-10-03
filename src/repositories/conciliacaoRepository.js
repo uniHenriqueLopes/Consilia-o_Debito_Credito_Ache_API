@@ -43,7 +43,7 @@ class ConciliacaoRepository {
 
     // Repositorio do filtro do Numero da NF
     async getByDateAndNota(dataInicio, dataFim, numeroNota) {
-        
+
         const pool = await poolPromise;
         const result = await pool.request()
             .input('dataInicio', sql.Date, dataInicio)
@@ -69,9 +69,9 @@ class ConciliacaoRepository {
         const result = await pool.request()
             .input('dataInicio', sql.Date, dataInicio)
             .input('dataFim', sql.Date, dataFim)
-            .input('produto', sql.VarChar,`%${produto}%`)
+            .input('produto', sql.VarChar, `%${produto}%`)
             .query(queries.getByDateAndProduto);
-            
+
         return result.recordset;
     }
 
@@ -200,37 +200,48 @@ class ConciliacaoRepository {
     }
 
     async create(data) {
-        const pool = await poolPromise;
-        const request = pool.request();
 
-        // Mapeamento e parse dos dados para tipos corretos
-        request.input('idDataIngestion', sql.Int, data.idDataIngestion);
-        request.input('Cod_EAN', sql.VarChar, data.EAN);
-        request.input('Apresentacao', sql.VarChar, data.Apresentacao);
-        request.input('CNPJ_Distribuidor', sql.VarChar, data.CNPJ_Distribuidor);
-        request.input('Numero_NF', sql.VarChar, data.Numero_NF);
-        request.input('Qtde_Faturamento', sql.Int, parseInt(data.Qtd_Faturada));
-        request.input('Valor_Bruto', sql.Decimal(18, 2), parseFloat(data.Valor_Bruto));
-        request.input('prct_Desconto', sql.Decimal(5, 2), parseFloat(data.prct_Desconto));
-        request.input('prct_Desconto_Padrao', sql.Decimal(5, 2), parseFloat(data.prct_Desconto_Padrao));
-        request.input('prct_Custo_Margem', sql.Decimal(5, 2), parseFloat(data.prct_Custo_Margem));
-        request.input('prct_Debito', sql.Decimal(5, 2), parseFloat(data.prct_Debito));
-        request.input('Valor_Debito_Bruto', sql.Decimal(18, 2), parseFloat(data.Valor_Debito_Bruto));
-        request.input('prct_Repasse_ICMS', sql.Decimal(5, 2), 0); // fixo conforme seu padrão
-        request.input('Valor_Repasse_ICMS', sql.Decimal(18, 2), 0); // fixo
-        request.input('Valor_Debito_Final', sql.Decimal(18, 2), parseFloat(data.Valor_Debito_Final));
-        request.input('RF_Ajuste_Tributario', sql.Decimal(18, 2), parseFloat(data.RF_Ajuste_Tributario));
-        request.input('RF_Valor_Debito', sql.Decimal(18, 2), parseFloat(data.Valor_Debito_Final)); // igual ao valor final
-        request.input('RF_Aliquota_Interestadual', sql.Decimal(5, 2), parseFloat(data.RF_Aliquota_Interestadual));
-        request.input('RF_PISCofins', sql.Decimal(5, 2), parseFloat(data.RF_PISCofins));
+        try {
 
-        // Trata campo vazio de RF_RedutorICMS
-        const redutorICMS = data.RF_RedutorICMS?.trim();
-        request.input('RF_RedutorICMS', sql.Decimal(5, 2), redutorICMS ? parseFloat(redutorICMS) : 0);
+            const pool = await poolPromise;
+            const request = pool.request();
 
-        // Executa a query
-        const query = buildDebitoInsertQuery();
-        await request.query(query);
+            // Mapeamento e parse dos dados para tipos corretos
+            request.input('idDataIngestion', sql.Int, data.idDataIngestion);
+            request.input('Cod_EAN', sql.VarChar, data.EAN);
+            request.input('Apresentacao', sql.VarChar, data.Apresentacao);
+            request.input('CNPJ_Distribuidor', sql.VarChar, data.CNPJ_Distribuidor);
+            request.input('Numero_NF', sql.VarChar, data.Numero_NF);
+            request.input('Qtde_Faturamento', sql.Int, parseInt(data.Qtd_Faturada));
+            request.input('Valor_Bruto', sql.Decimal(18, 2), parseFloat(data.Valor_Bruto));
+            request.input('prct_Desconto', sql.Decimal(5, 2), parseFloat(data.prct_Desconto));
+            request.input('prct_Desconto_Padrao', sql.Decimal(5, 2), parseFloat(data.prct_Desconto_Padrao));
+            request.input('prct_Custo_Margem', sql.Decimal(5, 2), parseFloat(data.prct_Custo_Margem));
+            request.input('prct_Debito', sql.Decimal(5, 2), parseFloat(data.prct_Debito));
+            request.input('Valor_Debito_Bruto', sql.Decimal(18, 2), parseFloat(data.Valor_Debito_Bruto));
+            request.input('prct_Repasse_ICMS', sql.Decimal(5, 2), 0); // fixo conforme seu padrão
+            request.input('Valor_Repasse_ICMS', sql.Decimal(18, 2), 0); // fixo
+            request.input('Valor_Debito_Final', sql.Decimal(18, 2), parseFloat(data.Valor_Debito_Final));
+            request.input('RF_Ajuste_Tributario', sql.Decimal(18, 2), parseFloat(data.RF_Ajuste_Tributario));
+            request.input('RF_Valor_Debito', sql.Decimal(18, 2), parseFloat(data.Valor_Debito_Final)); // igual ao valor final
+            request.input('RF_Aliquota_Interestadual', sql.Decimal(5, 2), parseFloat(data.RF_Aliquota_Interestadual));
+            request.input('RF_PISCofins', sql.Decimal(5, 2), parseFloat(data.RF_PISCofins));
+
+            // Trata campo vazio de RF_RedutorICMS
+            const redutorICMS = data.RF_RedutorICMS?.trim();
+            request.input('RF_RedutorICMS', sql.Decimal(5, 2), redutorICMS ? parseFloat(redutorICMS) : 0);
+
+            // Executa a query
+            const query = buildDebitoInsertQuery();
+            await request.query(query);
+
+        } catch (error) {
+
+            console.error(error.message);  // Exibe a mensagem de erro
+            return error.message  // Pode propagar o erro, caso deseje tratar em outro lugar
+
+        }
+
     }
 
     async insertDataIngestion(nomeArquivo) {

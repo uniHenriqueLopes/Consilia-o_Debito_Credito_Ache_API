@@ -126,7 +126,7 @@ class ConciliacaoController {
     } catch (error) {
       // caso ocorra algum erro desconnhecido ele entra nessa excessão
       console.error('Erro na importação:', error);
-      res.status(500).json({ message: 'Erro ao importar dados.', error: error.message });
+      res.status(500).json({ message: 'Erro ao importar dados.', error: error});
     }
   }
 
