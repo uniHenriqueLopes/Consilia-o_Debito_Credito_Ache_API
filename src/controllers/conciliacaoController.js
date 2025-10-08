@@ -12,7 +12,8 @@ class ConciliacaoController {
         pedidoOl,
         numeroNota,
         produto,
-        pedidoVenda
+        pedidoVenda,
+        empresa
       } = req.body;
 
       if (!dataInicio || !dataFim) {
@@ -34,6 +35,8 @@ class ConciliacaoController {
         dados = await repository.getByDateAndProduto(dataInicio, dataFim, produto);
       } else if (pedidoVenda) {
         dados = await repository.getDatePedidoVenda(dataInicio, dataFim, pedidoVenda);
+      // } else if (empresa) {
+      // console.log('teste de filtro')
       } else {
         dados = await repository.getByDateRange(dataInicio, dataFim);
       }

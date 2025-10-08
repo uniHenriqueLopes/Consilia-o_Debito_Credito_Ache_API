@@ -29,6 +29,9 @@ class ConciliacaoRepository {
             .query(queries.getByDateRange);
         return result.recordset;
     }
+    async getByDateRangeEmpresa(dataInicio, dataFim, empresa) {
+console.log('teste de filtro')
+    }
 
     // Repositorio do filtro do Pedido OL
     async getByDateAndPedidoOl(dataInicio, dataFim, pedidoOl) {
