@@ -38,7 +38,6 @@ WITH VendasUniCE AS (
         Fabricante.Fantasia LIKE '%ach%'
         AND ${whereClause}
 ),
--- CTE para as Vendas de Pernambuco (Uni Hospitalar)
 VendasUniPE AS (
     SELECT 
         NotaSaida.Status AS [Status],
@@ -72,8 +71,42 @@ VendasUniPE AS (
     WHERE 
         Fabricante.Fantasia LIKE '%ach%'
         AND ${whereClause}
+),
+-- Agrupando produtos repetidos (mesmo EAN e mesma nota)
+VendasAgrupadas AS (
+    SELECT
+        Status,
+        Pedido_OL,
+        Pedido_Venda,
+        Num_Nota,
+        Status_NF,
+        Dat_Emissao,
+        codigo_Produto,
+        Nome_Produto,
+        Cod_EAN,
+        Fabricante,
+        Empresa,
+        SUM(Qtd_Produto) AS Qtd_Produto, -- soma quantidade
+        AVG(Prc_Unitario) AS Prc_Unitario, -- média de preço unitário (caso varie)
+        SUM(Vlr_BruItem) AS Vlr_BruItem    -- soma valor total
+    FROM (
+        SELECT * FROM VendasUniCE
+        UNION ALL
+        SELECT * FROM VendasUniPE
+    ) AS TodasVendas
+    GROUP BY
+        Status,
+        Pedido_OL,
+        Pedido_Venda,
+        Num_Nota,
+        Status_NF,
+        Dat_Emissao,
+        codigo_Produto,
+        Nome_Produto,
+        Cod_EAN,
+        Fabricante,
+        Empresa
 )
--- Consulta principal que une as vendas de ambos os estados
 SELECT 
     CASE 
         WHEN Vendas.Status = 'C' AND DebitosAche.Qtde_Faturamento IS NULL THEN 'NÃO CONCILIADO'
@@ -85,11 +118,7 @@ SELECT
     DebitosAche.Numero_NF AS [Nota_Ache],
     Vendas.Num_Nota,
     Vendas.Empresa,
-    CASE 
-        WHEN Vendas.Status = 'F' THEN 'FECHADA'
-        WHEN Vendas.Status = 'C' THEN 'CANCELADA'
-        WHEN Vendas.Status = 'A' THEN 'ABERTA'
-    END AS [Status_NF],
+    Vendas.Status_NF,
     Vendas.Pedido_OL,
     Vendas.Pedido_Venda,
     Vendas.Dat_Emissao,
@@ -114,40 +143,9 @@ SELECT
     DebitosAche.RF_RedutorICMS
 FROM 
     UHCDB.DBO.DebitosAche 
-RIGHT JOIN (
-    SELECT * FROM VendasUniCE
-    UNION ALL
-    SELECT * FROM VendasUniPE
-) AS Vendas 
+RIGHT JOIN VendasAgrupadas AS Vendas
     ON Vendas.Num_Nota = DebitosAche.Numero_NF 
-    AND Vendas.Cod_EAN COLLATE Latin1_General_CI_AS = DebitosAche.Cod_EAN COLLATE Latin1_General_CI_AS
-GROUP BY
-    Vendas.Num_Nota,
-    Vendas.Empresa,
-    Vendas.Status,
-    Vendas.Pedido_OL,
-    Vendas.Pedido_Venda,
-    Vendas.Dat_Emissao,
-    Vendas.codigo_Produto,
-    Vendas.Nome_Produto,
-    Vendas.Cod_EAN,
-    Vendas.Fabricante,
-    Vendas.Qtd_Produto,
-    DebitosAche.Qtde_Faturamento,
-    Vendas.Prc_Unitario,
-    Vendas.Vlr_BruItem,
-    DebitosAche.RF_Ajuste_Tributario,
-    DebitosAche.Valor_Bruto,
-    DebitosAche.Valor_Debito_Bruto,
-    DebitosAche.prct_Desconto,
-    DebitosAche.prct_Desconto_Padrao,
-    DebitosAche.Valor_Debito_Final,
-    DebitosAche.prct_Custo_Margem,
-    DebitosAche.prct_Debito,
-    DebitosAche.RF_Aliquota_Interestadual,
-    DebitosAche.RF_PISCofins,
-    DebitosAche.RF_RedutorICMS,
-    DebitosAche.Numero_NF;
+    AND Vendas.Cod_EAN COLLATE Latin1_General_CI_AS = DebitosAche.Cod_EAN COLLATE Latin1_General_CI_AS;
     `;
 }
 
