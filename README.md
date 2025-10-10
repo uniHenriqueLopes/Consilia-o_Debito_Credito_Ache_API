@@ -44,9 +44,9 @@ conciliador-pedidos/
 ## Rotas
 - POST /api/conciliacoes/filtrar
 - {
-/n    "dataInicio": String, Obrigatorio
-/n   "dataFim":String, Obrigatorio
-/n   "pedidoOl":String, Opcional
+-    "dataInicio": String, Obrigatorio
+-   "dataFim":String, Obrigatorio
+-   "pedidoOl":String, Opcional
 -    "numeroNota":String, Opcional
 -    "produto":String, Opcional
 -    "pedidoVenda":String, Opcional
