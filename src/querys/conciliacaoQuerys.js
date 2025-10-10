@@ -140,9 +140,11 @@ SELECT
     DebitosAche.prct_Debito,
     DebitosAche.RF_Aliquota_Interestadual,
     DebitosAche.RF_PISCofins,
-    DebitosAche.RF_RedutorICMS
+    DebitosAche.RF_RedutorICMS,
+    DataIngestion.name
 FROM 
-    UHCDB.DBO.DebitosAche 
+    UHCDB.DBO.DebitosAche
+    INNER JOIN UHCDB.dbo.DataIngestion ON DataIngestion.id = DebitosAche.idDataIngestion
 RIGHT JOIN VendasAgrupadas AS Vendas
     ON Vendas.Num_Nota = DebitosAche.Numero_NF 
     AND Vendas.Cod_EAN COLLATE Latin1_General_CI_AS = DebitosAche.Cod_EAN COLLATE Latin1_General_CI_AS;
