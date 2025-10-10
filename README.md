@@ -50,7 +50,7 @@ conciliador-pedidos/
 -    "numeroNota":String, Opcional
 -    "produto":String, Opcional
 -    "pedidoVenda":String, Opcional
--}
+- }
 
 - POST /api/conciliacoes/importar
 
