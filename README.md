@@ -40,17 +40,6 @@ conciliador-pedidos/
 ├── package.json
 └── README.md  <-- vamos criar agora
 
-conciliador-pedidos/
-│
-├── controllers/ # Lógica das rotas
-├── routes/ # Definição das rotas da API
-├── services/ # Regras de negócio e integração com o banco
-├── utils/ # Utilitários (parser CSV etc.)
-├── db/ # Conexão com SQL Server
-├── uploads/ # Armazenamento temporário dos arquivos CSV
-├── .env # Variáveis de ambiente (credenciais)
-├── app.js # Arquivo principal da aplicação
-└── package.json # Dependências e scripts
 
 ## Rotas
 - POST /api/conciliacoes/filtrar
